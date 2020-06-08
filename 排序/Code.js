@@ -2,6 +2,9 @@ class Sort {
   static less(v, w) {
     return v < w;
   }
+  static equal(v, w) {
+    return v === w;
+  }
   static exch(array, i, j) {
     [array[i], array[j]] = [array[j], array[i]];
   }
@@ -170,20 +173,202 @@ class Quick extends Sort {
     return array;
   }
   static partition(array, left, right) {
+    this.dealPivot(array, left, right);
     const value = array[left];
-    let lIndex = left + 1;
-    let rIndex = right;
+    let lIndex = left;
+    let rIndex = right + 1;
 
-    while (lIndex < rIndex) {
-      while(this.less(array[lIndex], value)) {
-        lIndex++;
-      }
-      while(this.less(value, array[rIndex])) {
-        rIndex--;
-      }
+    while (true) {
+      while (this.less(array[++lIndex], value)) if (lIndex === right) break;
+      while (this.less(value, array[--rIndex])) if (rIndex === left) break;
+      if (rIndex <= lIndex) break;
       this.exch(array, lIndex, rIndex);
     }
+
     this.exch(array, left, rIndex);
+    return rIndex;
+  }
+  static dealPivot(array, left, right) {
+    const mid = Math.floor((left + right) / 2);
+    let min = left;
+    if (array[mid] < array[min]) min = mid;
+    if (array[right] < array[min]) min = right;
+    this.exch(array, left, mid);
+  }
+}
+
+class Quick3Way extends Sort {
+  static sort(array, left = 0, right = array.length - 1) {
+    if (left >= right) return array;
+    this.dealPivot(array, left, right);
+    let lt = left;
+    let gt = right;
+    let i = left + 1;
+    const value = array[left];
+
+    while (i <= gt) {
+      if (array[i] < value) this.exch(array, i++, lt++);
+      else if (array[i] > value) this.exch(array, i, gt--);
+      else i++;
+    }
+
+    this.sort(array, left, lt - 1);
+    this.sort(array, gt + 1, right);
+    return array;
+  }
+  static dealPivot(array, left, right) {
+    const mid = Math.floor((left + right) / 2);
+    let min = left;
+    if (array[mid] < array[min]) min = mid;
+    if (array[right] < array[min]) min = right;
+    this.exch(array, left, mid);
+  }
+}
+
+class Quick3Way2 extends Sort {
+  static sort(array, left = 0, right = array.length - 1) {
+    if (left >= right) return array;
+    this.dealPivot(array, left, right);
+
+    let p = left;
+    let q = right + 1;
+    let i = left;
+    let j = right + 1;
+    const value = array[left];
+
+    while (true) {
+      while (this.less(array[++i], value)) if (i === right) break;
+      while (this.less(value, array[--j])) if (j === left) break;
+
+      if (i === j && this.equal(array[i], value)) {
+        this.exch(array, i, p);
+      }
+      if (i >= j) break;
+
+      this.exch(array, i, j);
+      if (this.equal(array[i], value)) this.exch(array, ++p, i);
+      if (this.equal(array[j], value)) this.exch(array, --q, j);
+    }
+
+    // 把两端的=v移动到中间
+    i = j + 1; // 取保i指到v>0的第一个元素
+    for (let k = left; k <= p; k++) this.exch(array, k, j--);
+    for (let k = right; k >= q; k--) this.exch(array, k, i++);
+
+    // 左右两边的数组继续排序
+    this.sort(array, left, j);
+    this.sort(array, i, right);
+
+    return array;
+  }
+  static dealPivot(array, left, right) {
+    const mid = Math.floor((left + right) / 2);
+    let min = left;
+    if (array[mid] < array[min]) min = mid;
+    if (array[right] < array[min]) min = right;
+    this.exch(array, left, mid);
+  }
+}
+
+class HeapSort extends Sort {
+  static sort(array) {
+    // 数组从0开始
+    // 从下到上构建堆有序：找到最后一个堆
+    // 下沉排序
+    let N = array.length;
+    for (let k = Math.floor(N / 2) - 1; k >= 0; k--) this.sink(array, k, N);
+    while (N > 0) {
+      this.exch(array, 0, --N);
+      this.sink(array, 0, N);
+    }
+    return array;
+  }
+
+  static sink(array, i, N) {
+    while (2 * i + 1 < N) {
+      // 有子节点
+      // 找到更大的子节点
+      // 比较节点大小
+      // 替换
+      let j = 2 * i + 1;
+      if (j < N - 1 && this.less(array[j], array[j + 1])) j++;
+      if (!this.less(array[i], array[j])) break;
+      this.exch(array, i, j);
+      i = j;
+    }
+  }
+}
+
+class CountingSort extends Sort {
+  static sort(array) {
+    const maxValue = this.findMaxValue(array);
+    const buckets = new Array(maxValue + 1).fill(0);
+
+    array.forEach((value) => buckets[value]++);
+
+    let sortedIndex = 0;
+    buckets.forEach((value, i) => {
+      while (value--) {
+        array[sortedIndex++] = i;
+      }
+    });
+
+    return array;
+  }
+
+  static findMaxValue(array) {
+    let max = array[0];
+    array.forEach((a) => (max = a > max ? a : max));
+    return max;
+  }
+}
+
+class BucketSort extends Sort {
+  static sort(array, bucketSize = 5) {
+    let min = array[0];
+    let max = array[0];
+
+    array.forEach((elem) => {
+      min = elem < min ? elem : min;
+      max = elem > max ? elem : max;
+    });
+
+    const bucketCount = Math.floor((max - min) / bucketSize) + 1;
+    const buckets = new Array(bucketCount).fill().map(u => ([]));
+
+    array.forEach((elem) => {
+      buckets[Math.floor((elem - min) / bucketSize)].push(elem);
+    });
+    array.length = 0;
+    buckets.forEach((bucket) => array.push(...bucket.sort((a, b) => a - b)));
+    return array;
+  }
+}
+
+class RadixSort extends Sort {
+  static sort (arr, maxDigit = 6) {
+    let mod = 10;
+    let dev = 1;
+    const counter = [];
+    for (var i = 0; i < maxDigit; i++, dev *= 10, mod *= 10) {
+        for(var j = 0; j < arr.length; j++) {
+            var bucket = parseInt((arr[j] % mod) / dev);
+            if(counter[bucket]==null) {
+                counter[bucket] = [];
+            }
+            counter[bucket].push(arr[j]);
+        }
+        var pos = 0;
+        for(var j = 0; j < counter.length; j++) {
+            var value = null;
+            if(counter[j]!=null) {
+                while ((value = counter[j].shift()) != null) {
+                      arr[pos++] = value;
+                }
+          }
+        }
+    }
+    return arr;
   }
 }
 
@@ -198,7 +383,7 @@ class Quick extends Sort {
     new Array(length).fill(0).map((_value, i) => length - i);
 
   const testConfiguration = {
-    length: 10000,
+    length: 100000,
     min: 1,
     max: 100000,
   };
@@ -228,6 +413,12 @@ class Quick extends Sort {
       RecursionMerge,
       IterationMerge,
       Quick,
+      Quick3Way,
+      Quick3Way2,
+      HeapSort,
+      CountingSort,
+      BucketSort,
+      RadixSort
     ].forEach((Sort) => {
       const className = Sort.prototype.constructor.name;
       console.time(className);

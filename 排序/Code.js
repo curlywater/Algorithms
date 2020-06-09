@@ -167,13 +167,13 @@ class IterationMerge extends Sort {
 class Quick extends Sort {
   static sort(array, left = 0, right = array.length - 1) {
     if (left >= right) return array;
+    this.dealPivot(array, left, right);
     const pivot = this.partition(array, left, right);
     this.sort(array, left, pivot - 1);
     this.sort(array, pivot + 1, right);
     return array;
   }
   static partition(array, left, right) {
-    this.dealPivot(array, left, right);
     const value = array[left];
     let lIndex = left;
     let rIndex = right + 1;
@@ -189,11 +189,10 @@ class Quick extends Sort {
     return rIndex;
   }
   static dealPivot(array, left, right) {
-    const mid = Math.floor((left + right) / 2);
-    let min = left;
-    if (array[mid] < array[min]) min = mid;
-    if (array[right] < array[min]) min = right;
-    this.exch(array, left, mid);
+      const mid = Math.floor((left + right) / 2);
+      const middle = [array[left], array[right], array[mid]].sort((a, b) => a - b)[1];
+      const midIndex = middle === array[left] ? left : middle === array[mid] ? mid : right;
+      [array[midIndex], array[left]] = [array[left], array[midIndex]];
   }
 }
 
